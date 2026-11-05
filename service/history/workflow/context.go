@@ -891,6 +891,7 @@ func (c *ContextImpl) UpdateWorkflowExecutionWithNew(
 					shardContext,
 					updateMode,
 					newMutableState,
+					updateWorkflowTransactionPolicy,
 					payload,
 				)
 			},
@@ -966,6 +967,7 @@ func (c *ContextImpl) updateWorkflowExecutionWithNew(
 		shardContext,
 		updateMode,
 		newMutableState,
+		updateWorkflowTransactionPolicy,
 		payload,
 	)
 }
@@ -1041,6 +1043,7 @@ func (c *ContextImpl) executeWorkflowTransaction(
 	shardContext historyi.ShardContext,
 	updateMode persistence.UpdateWorkflowMode,
 	newMutableState historyi.MutableState,
+	transactionPolicy historyi.TransactionPolicy,
 	payload *ExecutionTransactionPayload,
 ) error {
 	if err := c.mergeUpdateWithNewReplicationTasks(
@@ -1090,6 +1093,9 @@ func (c *ContextImpl) executeWorkflowTransaction(
 		c.MutableState.IsWorkflow(),
 	); err != nil {
 		return err
+	}
+	if transactionPolicy == historyi.TransactionPolicyActive {
+		c.emitBufferedWHNInputMetrics(ctx, payload.ExecutionMutation.NewBufferedEvents)
 	}
 
 	emitStateTransitionCount(c.metricsHandler, shardContext.GetClusterMetadata(), c.MutableState)
